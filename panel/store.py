@@ -309,6 +309,29 @@ class AccountStore:
 				),
 			)
 
+	def reset_result(self, account_id: int) -> None:
+		"""Forget what the last check-in concluded, without claiming a new one.
+
+		After a credential is renewed by hand — the panel's 浏览器登录 — the stored result
+		describes a run made with the *old* credential, and the list went on showing its
+		error (「refresh 凭据已失效」) beside an account that had since logged in fine. The
+		honest replacement is "nobody could tell us": `last_success` and `last_checked_in`
+		back to NULL (the three-valued meaning `App.tsx:statusChip` renders), the error
+		cleared, and the consecutive-failure count dropped because a renewed credential is
+		exactly what the backoff was waiting on.
+
+		A separate method rather than `update(..., last_error=None)`: `update()` drops None
+		on purpose, so a caller cannot blank a column by omission, and that must stay true.
+		`last_run_at` and `last_quota` are untouched — no run happened, and the last known
+		balance is still the last known balance.
+		"""
+		with self._conn() as conn:
+			conn.execute(
+				'''UPDATE accounts SET last_success = NULL, last_checked_in = NULL,
+				       last_error = NULL, failures = 0, updated_at = ? WHERE id = ?''',
+				(_now(), account_id),
+			)
+
 	def promo_state(self) -> dict[str, dict]:
 		"""Per-card display state, keyed by the card id the manifest gave it."""
 		with self._conn() as conn:

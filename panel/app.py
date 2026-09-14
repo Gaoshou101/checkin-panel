@@ -314,6 +314,11 @@ def create_app(
 		except Exception as e:
 			raise HTTPException(status_code=400, detail=newapi.why(e)) from e
 		store.update(account_id, session=result.credential, api_user=result.user.get('id'))
+		# The credential just changed, so the stored result describes a run made with the old
+		# one — leaving it makes the list show 「refresh 凭据已失效」 beside an account that has
+		# since logged in fine. Back to unknown, not to success: no check-in happened here, and
+		# only a real run may claim one.
+		store.reset_result(account_id)
 		username = None
 		if payload.set_password:
 			try:

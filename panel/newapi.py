@@ -315,6 +315,18 @@ def _client(
 	proxy: Optional[str] = None,
 ) -> httpx.AsyncClient:
 	headers = {'Accept': 'application/json', 'User-Agent': UA}
+	# Some forks refuse a browser-only route when the request does not look like it came from
+	# their own page. Measured 2026-09-14 on grok-heavy.878.indevs.in: `POST
+	# /api/user/auth/refresh` answers 403 `{"code":"AUTH_ORIGIN_FORBIDDEN","message":"request
+	# origin is not allowed"}` without this header — identically with and without the proxy, so
+	# the exit IP was never the variable, and the same request with it answers 200 and hands back
+	# `access_token` + `user`. Without it the refresh cookie could never be spent and every run
+	# reported 凭据已失效 for a credential that was fine.
+	#
+	# `Origin` alone is what was measured to work; `Referer` was tried beside it and changed
+	# nothing, so it is not sent. A browser sets this on its own and httpx does not; it claims
+	# nothing beyond "this is the site's own front end", and every request here is that site's API.
+	headers['Origin'] = base_url.rstrip('/')
 	if access_token:
 		headers['Authorization'] = access_token
 	if api_user:

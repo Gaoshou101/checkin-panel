@@ -19,9 +19,8 @@
 优先走 HTTP 协议签到，只有站点确实拦得住协议（OAuth 会话过期、Turnstile、WAF）才启动浏览器 ——
 所以绝大多数账号的日常签到只是几个 HTTP 请求，快且不吃资源。
 
-已实测适配 anyrouter.top、agentrouter.org、seekai.cc、sotamodel.net，每家的坑都不一样：有的
-把签到路由藏在自己的名字下、有的用 JWT 加轮换 cookie、有的整个 API 挡在 WAF 后面。代码里每
-个看起来奇怪的判断都是为其中一条踩出来的，注释就写在那一行旁边。
+已实测适配的站点行为差异记录在 `docs/adr/`：anyrouter.top、agentrouter.org、seekai.cc、
+sotamodel.net 各有各的坑，代码里对应的判断都能追到一条 ADR。
 
 ![面板主界面：账号列表，每行一个账号，显示站点、登录方式、今天签到成功没有、余额和最近一次运行时间](docs/images/panel.png)
 
@@ -345,7 +344,7 @@ VcXsrv 一类），容器场景还要把 `DISPLAY` 和 X socket 传进去，比�
 ## 开发
 
 ```bat
-.venv\Scripts\python.exe -m pytest              :: 285 个测试
+.venv\Scripts\python.exe -m pytest              :: 201 个测试
 cd frontend && npm run dev                       :: 前端热重载，:5173 代理到 :8000
 ```
 
@@ -363,12 +362,12 @@ Fork 之后建议先装上这个钩子，它会在 `git commit` 时拦下形似�
 改前端不用重启面板；改 `panel/` 要重启。
 
 `panel/` 必须保持 OS 中立（它要在 Linux 容器里被导入），所有 Windows 专有代码都在仓库根的
-`desktop/` 里。`panel/tests/` 的 285 个测试因此必须能在容器里跑——桌面外壳的测试不在这里，
-它们跟开发树放在一起。
+`desktop/` 里。测试目录的划分不是装饰：`panel/tests/`（188 个）要能在容器里跑，`tests/`
+（13 个）测桌面外壳，那些模块故意不在镜像里。
 
-代码里的注释密度不低，这是故意的：每个不显然的判断旁边都写着它为什么长这样，而不是只写它做
-了什么。注释里形如 `ADR-0007` 的标记指向开发树里的决策记录，那些文件不在本仓库——把它当成一
-个「这里有个非显然的取舍，理由见旁边这段注释」的记号就行，注释本身是自足的。
+架构和约定写在 [`AGENTS.md`](AGENTS.md)，踩过的坑连实测数据写在
+[`docs/agents/traps.md`](docs/agents/traps.md)，术语表在 [`CONTEXT.md`](CONTEXT.md)，
+每个非显然的决定都有一条 [`docs/adr/`](docs/adr/)。
 
 ## 它不做什么
 
@@ -387,6 +386,7 @@ Fork 之后建议先装上这个钩子，它会在 `git commit` 时拦下形似�
 `pystray` 是 **LGPLv3**，且被打进了桌面版 exe。这不要求你的代码闭源（本来就是开源的），但分发
 zip 时需要保留那份声明。
 
-本仓库没有 GitHub Actions 签到工作流。面板自己调度（ADR-0008），fork 之后也不需要配那些 secret。
+`.github/workflows/checkin.yml` 是**废弃代码**，它跑的是上游那个老脚本、不是这个面板，仅作参考
+保留（ADR-0008）。fork 之后不要指望它能用。
 
 本项目与它签到的任何站点均无隶属关系。站点的服务条款请自行遵守。

@@ -17,9 +17,8 @@
 #   docker run --rm <image> sh -c "pip install --user -q pytest pytest-asyncio \
 #     && cd /app && python -m pytest panel/tests -q"     # 188 passed
 #
-# `panel/tests` explicitly rather than bare pytest, so the command keeps working if a suite is
-# ever added whose target modules are deliberately not in this image — the desktop shell's is
-# exactly that, and it is kept with the development tree.
+# `panel/tests` explicitly, not bare pytest: pytest.ini also lists `tests/`, the desktop
+# shell's own suite, whose target modules are deliberately not in this image.
 !panel/
 !run.py
 !requirements/base.txt
@@ -40,7 +39,8 @@
 # above already carries them and their BSD-2 notice (clause 2 asks a redistribution of that
 # code to reproduce it, and a published image is one).
 
-# Needed for the in-container test run documented above.
+# Docs the container's own logs point at when something fails.
+!CONTEXT.md
 !pytest.ini
 
 # Re-exclude what the allows above would otherwise drag back in.
