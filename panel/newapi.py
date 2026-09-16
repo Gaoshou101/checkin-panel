@@ -337,7 +337,7 @@ def _client(
 		headers=headers,
 		cookies={'session': session} if session else None,
 		follow_redirects=True,
-		proxy=proxy,
+		proxy=proxy or os.getenv('CHECKIN_PROXY_URL') or None,
 		# Never inherit the machine's proxy env: httpx builds a transport per env proxy at
 		# construction time, so a Clash-style `ALL_PROXY=socks5://...` made every client raise
 		# ImportError (no `socksio`) before a request went out. Proxying here is explicit —
