@@ -1,18 +1,24 @@
-# Check-in Panel
+# Check-in Panel (Fork)
+
+> This repository is a customized and optimized fork of [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel).
+> 
+> **Key Enhancements & Contributions:**
+> 1. **Full-chain SOCKS5 Proxy Support**: Added `socksio` dependency and patched global HTTP clients to support `socks5://` / `socks5h://` protocols smoothly;
+> 2. **Forced Headless Browser Proxy Routing**: Fixed `launch_login_context` where the default unproxied setting leaked the host IP and triggered Cloudflare blocks;
+> 3. **Chromium Stale Singleton Lock Cleanup**: Solved `ProcessSingleton: File exists` crashes after abnormal container restarts by automatically cleaning up dangling `SingletonLock` / `SingletonSocket` files;
+> 4. **NAS & LAN Proxy Optimization**: Verified and optimized compatibility with local Clash / Mihomo HTTP proxies to reliably pass Alibaba Cloud ESA WAF and Cloudflare Managed Challenges.
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows_Desktop-2563eb?style=flat-square&logo=windows&logoColor=white)](https://github.com/BingLi37/checkin-panel/releases)
 [![License MIT](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Three ways to run](https://img.shields.io/badge/Run-Desktop_/_Docker_/_Console-64748b?style=flat-square&logo=docker&logoColor=white)](#three-ways-to-run)
-[![@BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
-[![agentrouter.org referral](https://img.shields.io/badge/agentrouter.org-Referral-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fRlT)
+[![Original Author @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
+[![agentrouter.org referral](https://img.shields.io/badge/agentrouter.org-Referral-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
+[![anyrouter.top referral](https://img.shields.io/badge/anyrouter.top-Referral-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
 
 [简体中文](README.md) · **English**
 
-> The last badge is the author's **referral link** for `agentrouter.org` — clicking it is how
-> the author gets paid for this panel, the same arrangement as the promo card inside the panel
-> ([`docs/promo-cards.md`](docs/promo-cards.md)). Register from the site's own front page
-> instead if you would rather not; the panel works the same either way.
+> The badges above include referral links for `agentrouter.org` and `anyrouter.top` — registering through them is a way to support the maintenance of this project. If you prefer not to use referral links, feel free to register directly on the respective sites.
 
 A self-hosted panel that collects the daily bonus from New API style relay sites. Add your
 accounts, watch the balances, let it claim every day — on one machine, depending on no

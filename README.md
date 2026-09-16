@@ -1,17 +1,24 @@
-# 自动签到面板
+# 自动签到面板 (Fork 版)
+
+> 本仓库是 [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel) 的定制优化 Fork 分支。
+> 
+> **主要优化与贡献：**
+> 1. **全链路 SOCKS5 代理支持**：引入 `socksio` 依赖并改造全局客户端，全面支持 `socks5://` / `socks5h://` 协议，无缝适配各类远程代理网关；
+> 2. **浏览器无头代理强制路由**：修复 `launch_login_context` 中默认不走代理导致直接暴露本机 IP 触发 Cloudflare 阻断的问题；
+> 3. **Chromium 孤儿锁清理机制**：修复容器异常退出/强制重启后遗留 `SingletonLock`、`SingletonSocket` 导致 Playwright 报错 `ProcessSingleton: File exists` 崩溃的问题，启动前自动清理残留文件锁；
+> 4. **针对国内 NAS / 局域网代理的实测调优**：支持通过局域网 Clash / Mihomo HTTP 代理稳定通过 Alibaba Cloud ESA WAF 与 Cloudflare Managed Challenge。
 
 [![下载 Windows 桌面版](https://img.shields.io/badge/下载-Windows_桌面版-2563eb?style=flat-square&logo=windows&logoColor=white)](https://github.com/BingLi37/checkin-panel/releases)
 [![许可 MIT](https://img.shields.io/badge/许可-MIT-16a34a?style=flat-square)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![三种运行方式](https://img.shields.io/badge/运行方式-桌面版_/_容器_/_控制台-64748b?style=flat-square&logo=docker&logoColor=white)](#三种运行方式)
-[![作者 @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
-[![agentrouter.org 邀请注册](https://img.shields.io/badge/agentrouter.org-邀请注册-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fRlT)
+[![原作者 @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
+[![agentrouter.org 邀请注册](https://img.shields.io/badge/agentrouter.org-邀请注册-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
+[![anyrouter.top 邀请注册](https://img.shields.io/badge/anyrouter.top-邀请注册-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
 
 **简体中文** · [English](README.en.md)
 
-> 最后那个徽章是作者在 `agentrouter.org` 的**邀请链接**，点它注册是作者从这个面板得到回报的方式
-> —— 和面板里那张推荐卡片是同一件事（[`docs/promo-cards.md`](docs/promo-cards.md)）。不想走它，
-> 直接去站点首页注册一样能用这个面板。
+> 上方的徽章包含 `agentrouter.org` 与 `anyrouter.top` 的**邀请注册链接**，点它注册是支持维护本项目的方式。如果不想走邀请，直接访问对应站点首页注册也可正常使用面板。
 
 给 New API 类型的中转站做每日签到的自建面板。加账号、看余额、每天自动领，一台机器上跑，不依赖
 任何外部服务。
