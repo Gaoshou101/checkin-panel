@@ -144,14 +144,12 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements\browser.txt
 ```
 
-The four requirements files are layered. Install what you need:
+Dependencies have been streamlined into two concise files:
 
 | File | What it adds |
 |---|---|
-| `requirements/base.txt` | the panel itself; HTTP check-in only |
-| `requirements/browser.txt` | the browser (OAuth re-login, `visit` sites, Turnstile) — **most people want this one** |
-| `requirements/desktop.txt` | the window, the tray icon, the packager |
-| `requirements/dev.txt` | pytest |
+| `requirements.txt` | Core production dependencies (FastAPI, HTTP client, SOCKS5 support, headless browser) |
+| `requirements-dev.txt` | Development & unit testing (pytest, respx) |
 
 The UI has to be built once — `frontend/dist/` is a build artifact and is not in the repository
 (the container path handles this itself; the image builds it):

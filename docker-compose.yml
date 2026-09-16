@@ -7,7 +7,7 @@
 services:
   panel:
     build: .
-    image: anyrouter-checkin-panel
+    image: gaoshou101/checkin-panel:latest
     container_name: checkin-panel
 
     # 127.0.0.1 is deliberate and is the actual trust boundary. There is no login, and
@@ -34,7 +34,7 @@ services:
       PANEL_SCHEDULER: "1"
 
       # "0" turns the promo card off entirely, and nothing is fetched (docs/promo-cards.md).
-      PANEL_PROMO: "1"
+      PANEL_PROMO: "0"
 
     # Docker Desktop resolves host.docker.internal already; on Linux it does not exist, and
     # this makes the line above mean the same thing there.

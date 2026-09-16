@@ -1,7 +1,6 @@
 """The startup sequence every way of running the panel shares (ADR-0016).
 
-Three entry points need the same environment before anything else happens: `run.py`,
-the desktop shell, and the container. This module is the single copy of that sequence —
+Entry points need the same environment before anything else happens: `run.py` and the container. This module is the single copy of that sequence —
 duplicating it would mean two copies of the loopback fix, and one of them would rot.
 
 Order is load-bearing, not stylistic:

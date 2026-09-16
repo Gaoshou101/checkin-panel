@@ -124,14 +124,12 @@ python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements\browser.txt
 ```
 
-四个 requirements 文件是分层的，按需装：
+依赖已统一精简为两个文件：
 
 | 文件 | 内容 |
 |---|---|
-| `requirements/base.txt` | 面板本体，只能做 HTTP 签到 |
-| `requirements/browser.txt` | 加浏览器（OAuth 重登录、`visit` 站点、Turnstile）—— **大多数人要这个** |
-| `requirements/desktop.txt` | 加窗口、托盘、打包器 |
-| `requirements/dev.txt` | 加 pytest |
+| `requirements.txt` | 生产核心依赖（FastAPI、HTTP 客户端、SOCKS5 代理及完整无头浏览器自动化） |
+| `requirements-dev.txt` | 开发与单元测试（pytest、respx） |
 
 界面需要自己构建一次 —— `frontend/dist/` 是构建产物，不在仓库里（容器方式不用管，镜像自己会构建）：
 

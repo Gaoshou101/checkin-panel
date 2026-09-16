@@ -1,0 +1,7 @@
+fastapi==0.141.1
+uvicorn==0.52.2
+pydantic==2.13.4
+httpx==0.28.1
+socksio==1.0.0
+cloakbrowser==0.5.7
+playwright==1.62.0

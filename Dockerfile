@@ -55,8 +55,8 @@ WORKDIR /app
 
 # Into a directory of the same name, not flattened with `./`: browser.txt includes base.txt
 # with a bare `-r base.txt`, which pip resolves against the *including file's* directory.
-COPY requirements/base.txt requirements/browser.txt ./requirements/
-RUN pip install --no-cache-dir -r requirements/browser.txt
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Only what the panel imports. `panel/vendor/` rides along inside this one copy: the
 # cloakbrowser helpers and, beside them, the BSD-2 notice clause 2 asks a binary
@@ -79,7 +79,8 @@ ENV CLOAKBROWSER_CACHE_DIR=/app/.local/cloakbrowser \
 # to change (see docker-compose.yml, and never publish this on a LAN: no auth, and
 # /api/accounts answers with credentials in the clear).
 ENV PANEL_HOST=0.0.0.0 \
-	PANEL_PORT=8000
+	PANEL_PORT=8000 \
+	PANEL_PROMO=0
 
 # Not root: the process that holds plaintext credentials should not own the filesystem it
 # runs on. The three directories are created and handed over here so named volumes inherit
