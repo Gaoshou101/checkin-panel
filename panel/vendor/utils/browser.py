@@ -225,6 +225,13 @@ async def launch_login_context(settings: BrowserLoginSettings, *, use_proxy: boo
 		from cloakbrowser import launch_persistent_context_async
 
 		settings.profile_dir.mkdir(parents=True, exist_ok=True)
+		for lock_name in ('SingletonLock', 'SingletonSocket', 'SingletonCookie'):
+			lock_file = settings.profile_dir / lock_name
+			try:
+				if lock_file.is_symlink() or lock_file.exists():
+					lock_file.unlink(missing_ok=True)
+			except Exception:
+				pass
 		return await launch_persistent_context_async(str(settings.profile_dir), **launch_kwargs)
 
 	from cloakbrowser import launch_async
