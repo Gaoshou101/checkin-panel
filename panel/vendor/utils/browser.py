@@ -200,7 +200,7 @@ class _EphemeralBrowserContext:
 			await self._browser.close()
 
 
-async def launch_login_context(settings: BrowserLoginSettings, *, use_proxy: bool = False) -> BrowserContext:
+async def launch_login_context(settings: BrowserLoginSettings, *, use_proxy: bool = True) -> BrowserContext:
 	_ensure_binary_path(settings)
 
 	launch_kwargs: dict = {
