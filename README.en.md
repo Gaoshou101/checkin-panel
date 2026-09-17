@@ -9,12 +9,11 @@
 > 4. **WAF & Cloudflare Challenge Optimization**: Proven stability when routing through local Clash / Mihomo proxies to pass Alibaba Cloud ESA WAF and Cloudflare Managed Challenges;
 > 5. **Clean Streamlined Codebase**: Stripped out Windows desktop GUI and bulky tray dependencies; defaults to `PANEL_PROMO=0` clean mode with zero external promo polling.
 
-[![Docker Hub](https://img.shields.io/badge/Docker_Hub-gaoshou101%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gaoshou101/checkin-panel)
+[![Docker Hub](https://img.shields.io/badge/Docker_Hub-wit7zz%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/wit7zz/checkin-panel)
 [![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
 [![CI/CD Build](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml)
 [![License MIT](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](LICENSE)
 [![Python 3.14](https://img.shields.io/badge/Python-3.14+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![Original Author @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
 [![agentrouter.org referral](https://img.shields.io/badge/agentrouter.org-Referral-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
 [![anyrouter.top referral](https://img.shields.io/badge/anyrouter.top-Referral-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
 
@@ -48,7 +47,7 @@ Create `docker-compose.yml` on your NAS or Linux server:
 services:
   checkin-panel:
     # Docker Hub image (GHCR alternative: ghcr.io/gaoshou101/checkin-panel:latest)
-    image: gaoshou101/checkin-panel:latest
+    image: wit7zz/checkin-panel:latest
     container_name: checkin-panel
     restart: unless-stopped
     ports:
@@ -90,7 +89,7 @@ docker run -d \
   -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/profiles:/app/.browser_profiles \
-  gaoshou101/checkin-panel:latest
+  wit7zz/checkin-panel:latest
 ```
 
 ### Environment Variables
@@ -126,7 +125,7 @@ This repository includes a GitHub Actions workflow (`.github/workflows/docker-pu
 - **Docker Hub Sync**: Add these secrets in your repository `Settings` -> `Secrets and variables` -> `Actions`:
   - `DOCKERHUB_USERNAME`: Your Docker Hub username (e.g. `gaoshou101`)
   - `DOCKERHUB_TOKEN`: Your Docker Hub Access Token
-  Once configured, images will automatically push to `gaoshou101/checkin-panel:latest`!
+  Once configured, images will automatically push to `wit7zz/checkin-panel:latest`!
 
 ---
 

@@ -9,7 +9,7 @@
 > 4. **WAF 与 Cloudflare 挑战调优**：支持通过局域网 Clash / Mihomo HTTP 代理稳定通过 Alibaba Cloud ESA WAF 与 Cloudflare Managed Challenge；
 > 5. **剥离桌面遗留与纯净模式**：彻底移除 Windows GUI / 托盘代码与相关庞大依赖，默认开启 `PANEL_PROMO=0` 纯净模式，不向外部公共仓库轮询卡片，轻巧专注。
 
-[![Docker Hub](https://img.shields.io/badge/Docker_Hub-gaoshou101%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gaoshou101/checkin-panel)
+[![Docker Hub](https://img.shields.io/badge/Docker_Hub-wit7zz%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/wit7zz/checkin-panel)
 [![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
 [![CI/CD Build](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml)
 [![许可 MIT](https://img.shields.io/badge/许可-MIT-16a34a?style=flat-square)](LICENSE)
@@ -47,7 +47,7 @@
 services:
   checkin-panel:
     # 优先使用 Docker Hub 镜像，备选支持 GHCR: ghcr.io/gaoshou101/checkin-panel:latest
-    image: gaoshou101/checkin-panel:latest
+    image: wit7zz/checkin-panel:latest
     container_name: checkin-panel
     restart: unless-stopped
     ports:
@@ -91,7 +91,7 @@ docker run -d \
   -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/profiles:/app/.browser_profiles \
-  gaoshou101/checkin-panel:latest
+  wit7zz/checkin-panel:latest
 ```
 
 ### 环境变量完整参考
@@ -132,7 +132,7 @@ pytest panel/tests
 - **同步推送 Docker Hub**：在 GitHub 仓库 `Settings` -> `Secrets and variables` -> `Actions` 中添加以下两个 Secret：
   - `DOCKERHUB_USERNAME`: 你的 Docker Hub 用户名（如 `gaoshou101`）
   - `DOCKERHUB_TOKEN`: 你的 Docker Hub Access Token
-  配置后，每次代码提交将自动推送到 `gaoshou101/checkin-panel:latest`！
+  配置后，每次代码提交将自动推送到 `wit7zz/checkin-panel:latest`！
 
 ---
 

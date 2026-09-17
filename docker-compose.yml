@@ -6,9 +6,9 @@
 services:
   checkin-panel:
     # 支持 Docker Hub 或 GHCR 镜像：
-    #   Docker Hub: gaoshou101/checkin-panel:latest
+    #   Docker Hub: wit7zz/checkin-panel:latest
     #   GHCR:       ghcr.io/gaoshou101/checkin-panel:latest
-    image: gaoshou101/checkin-panel:latest
+    image: wit7zz/checkin-panel:latest
     container_name: checkin-panel
     restart: unless-stopped
 
