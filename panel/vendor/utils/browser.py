@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 
 from .debug import debug_print, is_debug_enabled
 from .popups import dismiss_popups, setup_popup_guard
-from .proxy import get_playwright_proxy
+from .proxy import get_playwright_proxy, get_proxy_server
 
 if TYPE_CHECKING:
 	from playwright.async_api import BrowserContext, Locator, Page
@@ -153,6 +153,7 @@ class BrowserLoginSettings:
 	profile_dir: Path
 	cloakbrowser_binary_path: str | None
 	persist_profile: bool
+	proxy: str | None = None
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -163,13 +164,20 @@ def _env_bool(name: str, default: bool) -> bool:
 
 
 def load_browser_login_settings(
-	account_name: str, provider: str, *, persist_profile: bool = True
+	account_name: str,
+	provider: str,
+	*,
+	persist_profile: bool = True,
+	url: Optional[str] = None,
+	proxy: Optional[str] = None,
 ) -> BrowserLoginSettings:
 	profile_base = Path(os.getenv('CHECKIN_BROWSER_PROFILE_DIR', '.browser_profiles'))
 	profile_dir = profile_base / provider / account_name
 	humanize = _env_bool('CHECKIN_HUMANIZE', True)
 	if provider == 'agentrouter':
 		humanize = _env_bool('CHECKIN_HUMANIZE_AGENTROUTER', humanize)
+	if proxy is None and url:
+		proxy = get_proxy_server(url=url)
 	return BrowserLoginSettings(
 		headless=_env_bool('CHECKIN_HEADLESS', True),
 		humanize=humanize,
@@ -177,6 +185,7 @@ def load_browser_login_settings(
 		profile_dir=profile_dir,
 		cloakbrowser_binary_path=os.getenv('CLOAKBROWSER_BINARY_PATH', '').strip() or None,
 		persist_profile=persist_profile,
+		proxy=proxy,
 	)
 
 
@@ -200,7 +209,9 @@ class _EphemeralBrowserContext:
 			await self._browser.close()
 
 
-async def launch_login_context(settings: BrowserLoginSettings, *, use_proxy: bool = True) -> BrowserContext:
+async def launch_login_context(
+	settings: BrowserLoginSettings, *, use_proxy: bool = True, url: Optional[str] = None
+) -> BrowserContext:
 	_ensure_binary_path(settings)
 
 	launch_kwargs: dict = {
@@ -211,13 +222,19 @@ async def launch_login_context(settings: BrowserLoginSettings, *, use_proxy: boo
 	if settings.humanize:
 		launch_kwargs['human_preset'] = 'careful'
 
-	proxy = get_playwright_proxy(use_proxy=use_proxy)
-	if proxy:
-		launch_kwargs['proxy'] = proxy
+	if not use_proxy:
+		proxy_server = None
+	elif settings.proxy is not None:
+		proxy_server = settings.proxy or None
+	else:
+		proxy_server = get_proxy_server(use_proxy=use_proxy, url=url)
+
+	if proxy_server:
+		launch_kwargs['proxy'] = {'server': proxy_server}
 		if is_debug_enabled():
-			print(f'[INFO] Browser proxy enabled: {proxy["server"]}')
+			print(f'[INFO] Browser proxy enabled: {proxy_server}')
 		else:
-			print('[INFO] Browser proxy enabled')
+			print(f'[INFO] Browser proxy enabled')
 	elif use_proxy:
 		print('[WARN] Provider requires proxy but CHECKIN_PROXY_URL is not set')
 

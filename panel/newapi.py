@@ -1,3 +1,4 @@
+from panel.vendor.utils.proxy import get_proxy_server
 """Protocol-level New API client — no browser, no UI automation.
 
 Every New API / One API fork exposes the same public surface:
@@ -337,7 +338,7 @@ def _client(
 		headers=headers,
 		cookies={'session': session} if session else None,
 		follow_redirects=True,
-		proxy=proxy or os.getenv('CHECKIN_PROXY_URL') or None,
+		proxy=proxy if proxy is not None else get_proxy_server(url=base_url),
 		# Never inherit the machine's proxy env: httpx builds a transport per env proxy at
 		# construction time, so a Clash-style `ALL_PROXY=socks5://...` made every client raise
 		# ImportError (no `socksio`) before a request went out. Proxying here is explicit —
@@ -346,14 +347,14 @@ def _client(
 	)
 
 
-def _turnstile_proxy() -> Optional[str]:
+def _turnstile_proxy(base_url: Optional[str] = None) -> Optional[str]:
 	"""The proxy a Turnstile-carrying request has to go out through.
 
 	A token is minted in a browser that had to use the proxy to get one at all, and the
 	site validates it against the caller's IP — so the POST has to come from the same
 	place or the token reads as invalid.
 	"""
-	return os.getenv('CHECKIN_PROXY_URL') or None
+	return get_proxy_server(url=base_url)
 
 
 def why(e: BaseException) -> str:
@@ -620,7 +621,7 @@ async def _check_in_endpoint(login: Login, site: SiteInfo) -> Outcome:
 		session=login.session,
 		access_token=login.access_token,
 		api_user=login.api_user,
-		proxy=_turnstile_proxy() if login.turnstile else None,
+		proxy=_turnstile_proxy(site.base_url) if login.turnstile else None,
 	) as client:
 		adopted = login.api_user
 		if not (login.session or login.access_token):

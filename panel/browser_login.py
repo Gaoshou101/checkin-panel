@@ -793,9 +793,9 @@ async def mint_turnstile(
 	# accumulates Cloudflare challenge state that makes the widget refuse to render —
 	# measured, a fresh context mints where the account's own profile does not.
 	settings = replace(
-		load_browser_login_settings(profile, provider, persist_profile=False), headless=headless
+		load_browser_login_settings(profile, provider, persist_profile=False, url=base_url), headless=headless
 	)
-	context = await launch_login_context(settings, use_proxy=True)  # the challenge needs the detour
+	context = await launch_login_context(settings, use_proxy=True, url=base_url)  # the challenge needs the detour
 	try:
 		page = await context.new_page()
 		await prepare_browser_page(page)
@@ -955,8 +955,8 @@ async def browser_visit(
 	base_url = base_url.rstrip('/')
 	root = _root(base_url)
 	profile = profile_name(account_name)
-	settings = replace(load_browser_login_settings(profile, provider), headless=headless)
-	context = await launch_login_context(settings)
+	settings = replace(load_browser_login_settings(profile, provider, url=base_url), headless=headless)
+	context = await launch_login_context(settings, url=base_url)
 	try:
 		page = await context.new_page()
 		await prepare_browser_page(page)
@@ -1023,8 +1023,8 @@ async def browser_login(
 	# means "the same IdP identity", which is what you want.
 	profile = profile_name(account_name)
 	# the caller decides visibility; the env default (CHECKIN_HEADLESS) is for CI
-	settings = replace(load_browser_login_settings(profile, provider), headless=headless)
-	context = await launch_login_context(settings)
+	settings = replace(load_browser_login_settings(profile, provider, url=base_url), headless=headless)
+	context = await launch_login_context(settings, url=base_url)
 	# What the logout dropped, and whether anything replaced it. A run that ends without a
 	# credential puts them back (see `_forget_site`): on a `visit` site the cleared session
 	# was the account's whole check-in, and losing it to a click that missed is a regression
@@ -1330,8 +1330,8 @@ async def inject_idp_cookies(
 	profile = profile_name(account_name)
 	# Headless regardless of the env default: this launch only writes cookies to disk, so a
 	# window would flash open for no one to look at.
-	settings = replace(load_browser_login_settings(profile, provider), headless=True)
-	context = await launch_login_context(settings)
+	settings = replace(load_browser_login_settings(profile, provider, url=base_url), headless=True)
+	context = await launch_login_context(settings, url=base_url)
 	try:
 		await context.add_cookies(cookies)
 	finally:

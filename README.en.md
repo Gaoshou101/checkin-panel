@@ -98,6 +98,7 @@ docker run -d \
 |---|---|---|
 | `TZ` | `Asia/Shanghai` | Timezone for accurate daily window calculation |
 | `CHECKIN_PROXY_URL` | `http://127.0.0.1:7897` | Outbound proxy (`http://`, `socks5://`, `socks5h://`) |
+| `CHECKIN_PROXY_OVERRIDES` | (empty) | Per-domain proxy overrides (JSON), e.g. `'{"anyrouter.top": "http://192.168.10.30:7890", "direct.com": "DIRECT"}'` |
 | `PANEL_SCHEDULER` | `1` | Daily scheduler: `1` runs automatic loop every 30m, `0` disables |
 | `PANEL_PROMO` | `0` | Promo cards: `0` for clean mode, `1` to poll remote promos |
 | `PANEL_HOST` | `0.0.0.0` | Listen address inside container |

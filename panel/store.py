@@ -1,3 +1,4 @@
+from __future__ import annotations
 """AccountStore — SQLite persistence for accounts.
 
 Local-only, single user: plaintext credentials (ADR-0003), DB inside the

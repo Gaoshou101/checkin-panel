@@ -26,6 +26,7 @@ services:
       # 示例（指向局域网 Clash / 宿主机代理）：
       # CHECKIN_PROXY_URL: http://192.168.10.30:7890
       CHECKIN_PROXY_URL: http://host.docker.internal:7897
+      # CHECKIN_PROXY_OVERRIDES: '{"anyrouter.top": "http://192.168.10.30:7890"}'
 
       # 调度器：1 为开启每日自动定时签到循环，0 为仅在前端手动签到
       PANEL_SCHEDULER: "1"
