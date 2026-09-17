@@ -76,7 +76,8 @@ def prepare(root: Path, *, assets: Optional[Path] = None, chromium: bool = True)
 		# cloakbrowser's own cache layout is <cache>/chromium-<version>/chrome.exe, which is
 		# already what .local/cloakbrowser holds — so pointing the cache here reuses the
 		# existing download instead of pulling another copy into ~/.cloakbrowser (ADR-0006).
-		cache = root / '.local' / 'cloakbrowser'
+		cache_env = os.environ.get('CLOAKBROWSER_CACHE_DIR')
+		cache = Path(cache_env) if cache_env else (root / '.local' / 'cloakbrowser')
 		os.environ.setdefault('CLOAKBROWSER_CACHE_DIR', str(cache))
 		found = _find_chromium(cache)
 		if found:
@@ -109,10 +110,16 @@ def roots(source_root: Path) -> tuple[Path, Path]:
 
 def _find_chromium(cache: Path) -> Optional[str]:
 	"""Newest binary already in the cache, or None. Never downloads."""
-	if not cache.exists():
-		return None
-	for candidate in sorted(cache.rglob(CHROME_NAME), reverse=True):
-		return str(candidate)
+	search_dirs = [cache]
+	for extra in (Path('/opt/cloakbrowser'), Path('/app/.local/cloakbrowser')):
+		if extra != cache and extra.exists():
+			search_dirs.append(extra)
+
+	for search_dir in search_dirs:
+		if not search_dir.exists():
+			continue
+		for candidate in sorted(search_dir.rglob(CHROME_NAME), reverse=True):
+			return str(candidate)
 	return None
 
 

@@ -1,62 +1,48 @@
-# The container way to run the panel (ADR-0016).
+# Check-in Panel - Docker Compose 快速部署
 #
+# 启动命令:
 #   docker compose up -d && docker compose logs -f
-#
-# Everything worth changing is in `environment` below.
 
 services:
-  panel:
-    build: .
+  checkin-panel:
+    # 支持 Docker Hub 或 GHCR 镜像：
+    #   Docker Hub: gaoshou101/checkin-panel:latest
+    #   GHCR:       ghcr.io/gaoshou101/checkin-panel:latest
     image: gaoshou101/checkin-panel:latest
     container_name: checkin-panel
+    restart: unless-stopped
 
-    # 127.0.0.1 is deliberate and is the actual trust boundary. There is no login, and
-    # GET /api/accounts answers with every stored password and session in the clear
-    # (ADR-0003) -- so publishing this as "8000:8000", which listens on every interface,
-    # hands the accounts to anyone on the network. Put a reverse proxy with authentication
-    # in front before that address changes.
+    # 端口映射：宿主机端口:容器端口（面板默认监听 8000）
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
 
     environment:
-      # The scheduler's day is local time: `checkin_after` says when a site opens its bonus
-      # and service.window_start measures the window from it, so a container left on UTC
-      # would check in at the wrong hour. Set this to the timezone the accounts live in.
+      # 时区：签到窗口与每日结算依赖本地时间
       TZ: Asia/Shanghai
 
-      # The browser login goes out through this proxy, and inside a container 127.0.0.1 is
-      # the container itself -- a proxy running on the host is reachable as
-      # host.docker.internal (mapped below for Linux, where Docker does not provide it).
-      # Leave it unset if the browser should go out directly; HTTP check-ins never use it.
+      # 代理设置（按需启用）：
+      # 支持 http://, socks5://, socks5h://
+      # 用于穿透 Cloudflare Managed Challenge 或阿里云 ESA WAF
+      # 示例（指向局域网 Clash / 宿主机代理）：
+      # CHECKIN_PROXY_URL: http://192.168.10.30:7890
       CHECKIN_PROXY_URL: http://host.docker.internal:7897
 
-      # "0" turns off the daily loop and leaves 签到 in the UI as the only trigger.
+      # 调度器：1 为开启每日自动定时签到循环，0 为仅在前端手动签到
       PANEL_SCHEDULER: "1"
 
-      # "0" turns the promo card off entirely, and nothing is fetched (docs/promo-cards.md).
+      # 纯净模式：0 为彻底关闭第三方卡片与外部轮询，不产生无关网络请求
       PANEL_PROMO: "0"
 
-    # Docker Desktop resolves host.docker.internal already; on Linux it does not exist, and
-    # this makes the line above mean the same thing there.
+    # 让 Linux 容器能够通过 host.docker.internal 访问宿主机端口与网关
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
     volumes:
-      # The only copy of the accounts, in plaintext (ADR-0003). Back this up independently --
-      # `docker compose down -v` deletes it along with the others.
-      - panel-data:/app/data
-      # Live logged-in browser sessions, one profile per account.
-      - panel-profiles:/app/.browser_profiles
-      # ~500MB of Chromium, downloaded on first use by sandbox.ensure_chromium(). A volume so
-      # a rebuild or a `down` does not mean downloading it again.
-      - panel-browser:/app/.local/cloakbrowser
+      # 1. 账号数据：持久化 SQLite 数据库 (panel.db)
+      - ./data:/app/data
 
-    restart: unless-stopped
+      # 2. 会话状态：持久化 OAuth / 浏览器登录生成的 Profile 与 Cookies
+      - ./profiles:/app/.browser_profiles
 
-    # The image declares the healthcheck; this only decides what happens on failure.
-    # `docker compose ps` shows the state.
-
-volumes:
-  panel-data:
-  panel-profiles:
-  panel-browser:
+      # 💡 提示：Chromium 自动化浏览器已预置于镜像内 (/opt/cloakbrowser)，
+      # 首次启动立即可用，无需额外挂载或在线下载几百兆浏览器内核。

@@ -1,17 +1,19 @@
-# 自动签到面板 (Fork 版)
+# 自动签到面板 (Docker 专版)
 
-> 本仓库是 [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel) 的定制优化 Fork 分支。
+> 本仓库是 [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel) 的定制优化 Fork 分支，专注于 **Docker 容器化与 NAS / 服务器无人值守部署**。
 > 
 > **主要优化与贡献：**
-> 1. **全链路 SOCKS5 代理支持**：引入 `socksio` 依赖并改造全局客户端，全面支持 `socks5://` / `socks5h://` 协议，无缝适配各类远程代理网关；
-> 2. **浏览器无头代理强制路由**：修复 `launch_login_context` 中默认不走代理导致直接暴露本机 IP 触发 Cloudflare 阻断的问题；
-> 3. **Chromium 孤儿锁清理机制**：修复容器异常退出/强制重启后遗留 `SingletonLock`、`SingletonSocket` 导致 Playwright 报错 `ProcessSingleton: File exists` 崩溃的问题，启动前自动清理残留文件锁；
-> 4. **针对国内 NAS / 局域网代理的实测调优**：支持通过局域网 Clash / Mihomo HTTP 代理稳定通过 Alibaba Cloud ESA WAF 与 Cloudflare Managed Challenge。
+> 1. **内置自动化 Chromium 内核**：镜像直接预置经检验的无头浏览器内核（`/opt/cloakbrowser`），开箱秒起，无需首次启动在线下载 500MB，更不会因宿主机目录挂载遮挡文件；
+> 2. **全链路 SOCKS5 / HTTP 代理穿透**：引入 `socksio` 并在 HTTP 客户端与无头浏览器间全面打通 `socks5://`、`socks5h://` 与 `http://` 代理协议，无缝适配各类旁路由 Clash / 远程代理网关；
+> 3. **Chromium 孤儿锁自愈机制**：修复容器异常退出/强制重启后遗留 `SingletonLock`、`SingletonSocket` 导致 Playwright 报错 `ProcessSingleton: File exists` 崩溃的问题，启动前自动清理残留文件锁；
+> 4. **WAF 与 Cloudflare 挑战调优**：支持通过局域网 Clash / Mihomo HTTP 代理稳定通过 Alibaba Cloud ESA WAF 与 Cloudflare Managed Challenge；
+> 5. **剥离桌面遗留与纯净模式**：彻底移除 Windows GUI / 托盘代码与相关庞大依赖，默认开启 `PANEL_PROMO=0` 纯净模式，不向外部公共仓库轮询卡片，轻巧专注。
 
-[![下载 Windows 桌面版](https://img.shields.io/badge/下载-Windows_桌面版-2563eb?style=flat-square&logo=windows&logoColor=white)](https://github.com/BingLi37/checkin-panel/releases)
+[![Docker Hub](https://img.shields.io/badge/Docker_Hub-gaoshou101%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gaoshou101/checkin-panel)
+[![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
+[![CI/CD Build](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml)
 [![许可 MIT](https://img.shields.io/badge/许可-MIT-16a34a?style=flat-square)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![三种运行方式](https://img.shields.io/badge/运行方式-桌面版_/_容器_/_控制台-64748b?style=flat-square&logo=docker&logoColor=white)](#三种运行方式)
+[![Python 3.14](https://img.shields.io/badge/Python-3.14+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![原作者 @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
 [![agentrouter.org 邀请注册](https://img.shields.io/badge/agentrouter.org-邀请注册-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
 [![anyrouter.top 邀请注册](https://img.shields.io/badge/anyrouter.top-邀请注册-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
@@ -20,134 +22,120 @@
 
 > 上方的徽章包含 `agentrouter.org` 与 `anyrouter.top` 的**邀请注册链接**，点它注册是支持维护本项目的方式。如果不想走邀请，直接访问对应站点首页注册也可正常使用面板。
 
-给 New API 类型的中转站做每日签到的自建面板。加账号、看余额、每天自动领，一台机器上跑，不依赖
-任何外部服务。
+给 New API 类型的中转站做每日签到的自建面板。加账号、看余额、每天自动领，一台机器上跑，不依赖任何外部服务。
 
-优先走 HTTP 协议签到，只有站点确实拦得住协议（OAuth 会话过期、Turnstile、WAF）才启动浏览器 ——
-所以绝大多数账号的日常签到只是几个 HTTP 请求，快且不吃资源。
-
-已实测适配的站点行为差异记录在 `docs/adr/`：anyrouter.top、agentrouter.org、seekai.cc、
-sotamodel.net 各有各的坑，代码里对应的判断都能追到一条 ADR。
+优先走 HTTP 协议签到，只有站点确实拦得住协议（OAuth 会话过期、Turnstile、WAF）才启动浏览器 —— 所以绝大多数账号的日常签到只是几个极速 HTTP 请求，轻快省资源。
 
 ![面板主界面：账号列表，每行一个账号，显示站点、登录方式、今天签到成功没有、余额和最近一次运行时间](docs/images/panel.png)
 
-## 先读这一段，它决定你怎么部署
+## 安全须知（部署前必看）
 
-**面板没有登录。** 任何能访问到它端口的人，都能从 `GET /api/accounts` 拿到**每个账号的明文密码
-和 session**，这是设计如此（ADR-0003：一个单用户、跑在自己机器上的面板）。
+**面板本身不带访问鉴权层。** 任何能直接访问到它端口的客户端，都能从 `GET /api/accounts` 获取到**已存账号的密码与 session**（ADR-0003：定位为单用户自用私有面板）。
 
-所以：
+- **局域网/家庭 NAS**：建议部署在内网网段，通过局域网 IP 或 Tailscale / WireGuard 私网访问；
+- **公网 VPS**：**切勿直接把 8000 端口暴露给公网**。请务必前置 Nginx / Caddy 配合 Basic Auth 或 OAuth 进行反向代理与 TLS 加密保护，详见 [`docs/deploying.md`](docs/deploying.md)。
+- `data/panel.db` 是账号和记录的唯一存储文件，备份此文件即可完整迁移数据。
 
-- 自己电脑上用 → 默认绑 `127.0.0.1`，没问题，跳过这段。
-- 想从手机/别的设备访问 → 用 Tailscale、WireGuard 之类的私有网络，**不要**把端口公开。
-- 必须放公网 → 认证 + TLS + 面板自己的端口不对外，三者缺一不可。做法见
-  [`docs/deploying.md`](docs/deploying.md)。
+---
 
-`data/panel.db` 是账号的唯一副本，请按密码文件对待：单独备份，不要提交，不要打进镜像。
+## 快速开始（推荐 Docker 部署）
 
-## 三种运行方式
+### 方式一：Docker Compose（推荐）
 
-| | 适合谁 | 你得到 | 你接受 |
-|---|---|---|---|
-| **桌面版** | 自己电脑上用的人 | 双击就开，关窗口继续后台签到，托盘图标 | 仅 Windows |
-| **容器** | 部署在服务器上的人 | 重启不丢，Docker 能跑的地方都能跑 | 需要 Docker，且要正确处理暴露 |
-| **控制台** | 部署在服务器上的人 / 想改代码的人 | 装完就能跑 | 终端窗口得一直开着 |
-
-**三种不能同时开。** 它们共用 `data/panel.db` 和 `.browser_profiles/`，同时开会锁数据库、两个
-浏览器抢同一个 profile。桌面版自己会拒绝启动第二个实例；容器用的是独立卷，所以它跟另外两种同时
-开不会报错，而是变成**两套不同的账号往同一批站点签到**，更难发现。
-
-### 桌面版
-
-不想装 Python 的话，去 Releases 下载 zip，解压，双击 `签到面板.exe`。
-
-从源码跑或自己打包 —— 两者都要求[界面已经构建过](#从源码安装)一次（`frontend/dist/`），
-否则 `desktop/desktop.spec` 会直接报 `Unable to find ...frontend\dist`：
-
-```bat
-.venv\Scripts\python.exe -m desktop                :: 直接运行
-.venv\Scripts\pyinstaller.exe desktop\desktop.spec :: 打包到 dist\签到面板\
-```
-
-点 **X 不会退出** —— 它会问一次（可以勾「不再提示」），然后收进通知区域。左键点托盘图标召回窗口，
-右键选**退出**才真的停。这就是桌面版存在的意义：不占着一个窗口也能继续每天签到。
-
-`dist\签到面板\` 整个文件夹可以随便搬。`data\`、`.browser_profiles\`、`.local\cloakbrowser\`
-都建在 exe 旁边，所以账号跟着文件夹走。默认绑 `127.0.0.1`。
-
-**首次使用注意三件事**（不是 bug）：
-
-- Windows 会弹 SmartScreen「已阻止不受信任的应用」—— exe 没有代码签名证书。点「更多信息」→
-  「仍要运行」。
-- 部分杀毒软件会误报 PyInstaller 打出来的 exe，需要加白名单。
-- 第一次做**浏览器登录**时要下载约 500MB 的浏览器内核，界面看着像卡住，实际在下载。纯 HTTP
-  签到的账号不用等它。
-
-### 容器
-
-```bash
-docker compose build
-docker compose up -d
-docker compose logs -f
-```
-
-然后打开 <http://127.0.0.1:8000>。第一次签到前先把时区设对，在 `docker-compose.yml` 里：
+在你的 NAS（如飞牛 fnOS / 群晖 / 威联通 / Unraid）或 Linux 服务器上创建 `docker-compose.yml`：
 
 ```yaml
-environment:
-  TZ: Asia/Shanghai
+services:
+  checkin-panel:
+    # 优先使用 Docker Hub 镜像，备选支持 GHCR: ghcr.io/gaoshou101/checkin-panel:latest
+    image: gaoshou101/checkin-panel:latest
+    container_name: checkin-panel
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # 时区（确保签到刷新时间窗口准确）
+      TZ: Asia/Shanghai
+      # 出站代理（按需配置，用于穿透 Cloudflare 或阿里云 ESA WAF）
+      # 支持 http://, socks5://, socks5h://
+      # 示例指向局域网旁路由 Clash / 宿主机代理端口：
+      CHECKIN_PROXY_URL: http://host.docker.internal:7890
+      # 每日定时自动签到循环 (1 开启，0 仅在页面手动点击)
+      PANEL_SCHEDULER: "1"
+      # 纯净模式 (0 关闭第三方推荐卡片外联)
+      PANEL_PROMO: "0"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 1. 账号数据卷（持久化存储 panel.db 数据库）
+      - ./data:/app/data
+      # 2. 会话状态卷（持久化存储 OAuth 与浏览器登录生成的 Profile）
+      - ./profiles:/app/.browser_profiles
 ```
 
-这个不是装饰。站点在特定时刻才开放当天奖励（账号上的 `checkin_after`），而面板按**本地**时间
-算一天，容器留在 UTC 会在错误的时刻反复重试。
-
-`docker-compose.yml` 里发布的是 `127.0.0.1:8000:8000`，只有本机能访问 —— 要改成对外之前，先读
-上面那段和 `docs/deploying.md`。
-
-### 控制台
-
-```bat
-start.bat
+执行启动：
+```bash
+docker compose up -d && docker compose logs -f
 ```
+浏览器访问 `http://<你的NAS或服务器IP>:8000` 即可使用！
 
-或者 `.venv\Scripts\python.exe run.py`。窗口关掉调度器就停了，没有任何提示。
-
-注意 `run.py` 默认绑 `0.0.0.0`（局域网可达），`start.bat` 会替你改成 `127.0.0.1`。直接跑
-`run.py` 的话自己设 `PANEL_HOST`。
-
-## 从源码安装
-
-需要 Python 3.11+（本项目实测在 3.14），以及 Node 20+（仅在你要改前端时）。
-
-```bat
-python -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements\browser.txt
-```
-
-依赖已统一精简为两个文件：
-
-| 文件 | 内容 |
-|---|---|
-| `requirements.txt` | 生产核心依赖（FastAPI、HTTP 客户端、SOCKS5 代理及完整无头浏览器自动化） |
-| `requirements-dev.txt` | 开发与单元测试（pytest、respx） |
-
-界面需要自己构建一次 —— `frontend/dist/` 是构建产物，不在仓库里（容器方式不用管，镜像自己会构建）：
+### 方式二：Docker CLI 单行运行
 
 ```bash
-cd frontend
-npm ci --legacy-peer-deps
-npm run build
+docker run -d \
+  --name checkin-panel \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -e TZ=Asia/Shanghai \
+  -e PANEL_SCHEDULER=1 \
+  -e PANEL_PROMO=0 \
+  -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/profiles:/app/.browser_profiles \
+  gaoshou101/checkin-panel:latest
 ```
 
-`--legacy-peer-deps` 是必需的：`@heroui/theme` 声明 peer 依赖 `tailwindcss>=4`，而项目用的是
-`3.4.x`。这是个已知的、待解决的前端依赖冲突，不影响构建结果。
+### 环境变量完整参考
 
-没有 `frontend/dist/` 时面板只提供 API，不提供界面。
+| 变量名 | 默认值 | 作用说明 |
+|---|---|---|
+| `TZ` | `Asia/Shanghai` | 容器时区，确保签到时间窗口按本地时间精准结算 |
+| `CHECKIN_PROXY_URL` | `http://127.0.0.1:7897` | 全局出站代理（支持 `http://`, `socks5://`, `socks5h://`） |
+| `PANEL_SCHEDULER` | `1` | 定时签到开关：`1` 为每 30 分钟轮询窗口自动签到，`0` 为仅手动 |
+| `PANEL_PROMO` | `0` | 推荐卡片：`0` 为纯净无外联模式，`1` 为拉取推荐卡片 |
+| `PANEL_HOST` | `0.0.0.0` | 容器内监听地址 |
+| `PANEL_PORT` | `8000` | 容器内监听端口 |
 
-装好之后加第一个账号：右上角**添加账号**，填站点地址点**检测** —— 签到方式和这个站点认哪几种
-登录方式都由探测结果决定，不用你自己判断。
+### 方式三：本地 Python 直接运行（开发模式）
 
-![添加账号弹窗：名称、网站地址、签到方式、登录方式、用户名和密码](docs/images/add-account.png)
+```bash
+# 1. 创建虚拟环境
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# 2. 安装核心依赖
+pip install -r requirements.txt
+
+# 3. 运行面板
+python run.py
+
+# 4. 如需运行单元测试
+pip install -r requirements-dev.txt
+pytest panel/tests
+```
+
+---
+
+## 自动构建推送至 Docker Hub 说明
+
+本仓库已配置 GitHub Actions 自动构建工作流（`.github/workflows/docker-publish.yml`）：
+- **默认推送**：每次推送代码至 `main` 分支或打 `v*` 标签时，自动推送到 GitHub Packages (`ghcr.io`)；
+- **同步推送 Docker Hub**：在 GitHub 仓库 `Settings` -> `Secrets and variables` -> `Actions` 中添加以下两个 Secret：
+  - `DOCKERHUB_USERNAME`: 你的 Docker Hub 用户名（如 `gaoshou101`）
+  - `DOCKERHUB_TOKEN`: 你的 Docker Hub Access Token
+  配置后，每次代码提交将自动推送到 `gaoshou101/checkin-panel:latest`！
+
+---
 
 ## 服务器上怎么做浏览器登录
 

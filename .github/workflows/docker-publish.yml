@@ -3,7 +3,8 @@ name: Build and Push Docker Image
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # 支持手动一键点击触发构建
+    tags: [ "v*" ]
+  workflow_dispatch:
 
 jobs:
   build-and-push:
@@ -22,7 +23,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 1. 登录 GitHub Container Registry (GHCR) —— 自动认证，无需手动配 Key
+      # 1. GitHub Container Registry (GHCR) —— 自动认证免配置
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -30,28 +31,32 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. 如果想推送到 Docker Hub（若不需要可删掉这段；需要则在仓库 Secrets 配置 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN）
+      # 2. Docker Hub —— 如果在仓库 Secrets 配置了 DOCKERHUB_USERNAME 与 DOCKERHUB_TOKEN 则自动登录并推送
       - name: Log in to Docker Hub
-        if: "${{ env.DOCKERHUB_USERNAME != '' }}"
+        if: "${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}"
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # 3. 提取镜像元数据与标签
       - name: Extract metadata for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
             ghcr.io/${{ github.repository }}
-            # 如果配置了 Docker Hub，解开下面这行：
-            # ${{ secrets.DOCKERHUB_USERNAME }}/checkin-panel
+            ${{ secrets.DOCKERHUB_USERNAME != '' && format('docker.io/{0}/checkin-panel', secrets.DOCKERHUB_USERNAME) || '' }}
           tags: |
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
 
+      # 4. 构建并发布 Docker 镜像 (带多级缓存加速)
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile

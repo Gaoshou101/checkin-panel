@@ -1,176 +1,134 @@
-# Check-in Panel (Fork)
+# Check-in Panel (Docker Edition)
 
-> This repository is a customized and optimized fork of [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel).
+> This repository is a customized and optimized fork of [BingLi37/checkin-panel](https://github.com/BingLi37/checkin-panel), focused on **Docker containerization and headless NAS / server deployment**.
 > 
 > **Key Enhancements & Contributions:**
-> 1. **Full-chain SOCKS5 Proxy Support**: Added `socksio` dependency and patched global HTTP clients to support `socks5://` / `socks5h://` protocols smoothly;
-> 2. **Forced Headless Browser Proxy Routing**: Fixed `launch_login_context` where the default unproxied setting leaked the host IP and triggered Cloudflare blocks;
-> 3. **Chromium Stale Singleton Lock Cleanup**: Solved `ProcessSingleton: File exists` crashes after abnormal container restarts by automatically cleaning up dangling `SingletonLock` / `SingletonSocket` files;
-> 4. **NAS & LAN Proxy Optimization**: Verified and optimized compatibility with local Clash / Mihomo HTTP proxies to reliably pass Alibaba Cloud ESA WAF and Cloudflare Managed Challenges.
+> 1. **Built-in Headless Chromium**: Pre-downloads the verified Chromium engine into `/opt/cloakbrowser` at build time. Starts up in seconds without runtime browser downloads, safe against host bind-mount masking;
+> 2. **Full-chain SOCKS5 & HTTP Proxy**: Added `socksio` and integrated full support for `socks5://`, `socks5h://`, and `http://` proxies across both HTTP clients and headless browser sessions;
+> 3. **Chromium Singleton Lock Auto-recovery**: Solves `ProcessSingleton: File exists` crashes after abnormal container termination by automatically removing dangling `SingletonLock` / `SingletonSocket` files;
+> 4. **WAF & Cloudflare Challenge Optimization**: Proven stability when routing through local Clash / Mihomo proxies to pass Alibaba Cloud ESA WAF and Cloudflare Managed Challenges;
+> 5. **Clean Streamlined Codebase**: Stripped out Windows desktop GUI and bulky tray dependencies; defaults to `PANEL_PROMO=0` clean mode with zero external promo polling.
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows_Desktop-2563eb?style=flat-square&logo=windows&logoColor=white)](https://github.com/BingLi37/checkin-panel/releases)
+[![Docker Hub](https://img.shields.io/badge/Docker_Hub-gaoshou101%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/gaoshou101/checkin-panel)
+[![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
+[![CI/CD Build](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml)
 [![License MIT](https://img.shields.io/badge/License-MIT-16a34a?style=flat-square)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![Three ways to run](https://img.shields.io/badge/Run-Desktop_/_Docker_/_Console-64748b?style=flat-square&logo=docker&logoColor=white)](#three-ways-to-run)
+[![Python 3.14](https://img.shields.io/badge/Python-3.14+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Original Author @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
 [![agentrouter.org referral](https://img.shields.io/badge/agentrouter.org-Referral-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
 [![anyrouter.top referral](https://img.shields.io/badge/anyrouter.top-Referral-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
 
 [简体中文](README.md) · **English**
 
-> The badges above include referral links for `agentrouter.org` and `anyrouter.top` — registering through them is a way to support the maintenance of this project. If you prefer not to use referral links, feel free to register directly on the respective sites.
+> The badges above include referral links for `agentrouter.org` and `anyrouter.top` — registering through them supports the maintenance of this project. If you prefer not to use referral links, feel free to register directly on the respective sites.
 
-A self-hosted panel that collects the daily bonus from New API style relay sites. Add your
-accounts, watch the balances, let it claim every day — on one machine, depending on no
-external service.
+A self-hosted panel that collects the daily bonus from New API style relay sites. Add your accounts, watch balances, let it claim daily — on one machine, without third-party services.
 
-It checks in over HTTP first and starts a browser only when a site genuinely blocks the
-protocol (an expired OAuth session, Turnstile, a WAF). So a day's check-in is a handful of
-HTTP requests for most accounts: fast, and cheap enough to ignore.
+HTTP-first check-ins: launches a browser only when a site genuinely blocks protocols (OAuth session expiration, Turnstile, WAF). Most runs are fast, lightweight HTTP requests.
 
-Measured against anyrouter.top, agentrouter.org, seekai.cc and sotamodel.net, each awkward in
-its own way: one hides the check-in route under its own name, one uses a JWT with a rotating
-cookie, one puts the whole API behind a WAF. Every odd-looking branch in the code was written
-for one of those, and the comment explaining it sits on the line beside it.
+![Panel UI: account list showing sites, login method, success status, balance and last run time](docs/images/panel.png)
 
-**The UI is in Chinese.** This document names the buttons in Chinese with an English gloss, so
-you can find them on screen.
+## Security Notice (Read First)
 
-![The panel's account list: one row per account showing the site, the login method, whether today's check-in succeeded, the balance and the last run](docs/images/panel.png)
+**The panel has no built-in authentication layer.** Anyone who can reach its port can retrieve **stored passwords and sessions in the clear** from `GET /api/accounts` (ADR-0003: single-user private panel design).
 
-## Read this first — it decides how you deploy
+- **LAN / Home NAS**: Keep it within your private subnet; access via LAN IP or WireGuard / Tailscale;
+- **Public VPS**: **Never expose port 8000 directly to the internet**. Put Nginx / Caddy with Basic Auth or OAuth in front with TLS, as detailed in [`docs/deploying.md`](docs/deploying.md).
+- `data/panel.db` is the sole database file. Backing up this single file preserves all your accounts.
 
-**The panel has no login.** Anyone who can reach its port can read **every account's password
-and session in the clear** from `GET /api/accounts`. That is deliberate (ADR-0003: a
-single-user panel running on your own machine).
+---
 
-So:
+## Quick Start (Docker Recommended)
 
-- On your own computer → it binds `127.0.0.1` by default. Fine, skip this part.
-- Reaching it from a phone or another device → put it on a private network (Tailscale,
-  WireGuard). Do **not** publish the port.
-- It must be on the public internet → authentication, TLS, **and** the panel's own port kept
-  off the interface. All three, not two of them. See [`docs/deploying.md`](docs/deploying.md).
+### Option 1: Docker Compose (Recommended)
 
-`data/panel.db` is the only copy of your accounts. Treat it as a password file: back it up
-separately, never commit it, never bake it into an image.
-
-## Three ways to run
-
-| | Who it suits | You get | You accept |
-|---|---|---|---|
-| **Desktop** | using it on your own machine | double-click to start, closing the window keeps checking in, a tray icon | Windows only |
-| **Container** | deploying on a server | survives reboots, runs anywhere Docker does | needs Docker, and needs the exposure handled properly |
-| **Console** | deploying on a server / changing the code | works as soon as it is installed | a terminal window has to stay open |
-
-**Never run two of them at once.** They share `data/panel.db` and `.browser_profiles/`, so two
-panels mean a locked database and two browsers fighting over one profile. The desktop app
-refuses to start a second instance on its own. The container uses its own volumes, so starting
-it beside either of the others raises no error at all — it just becomes **two different sets of
-accounts checking into the same sites**, which is much harder to notice.
-
-### Desktop
-
-If you would rather not install Python: download the zip from Releases, unpack it, double-click
-`签到面板.exe`.
-
-From source, or to build the executable yourself — both require [the UI to have been built
-once](#installing-from-source) (`frontend/dist/`), or `desktop/desktop.spec` fails outright
-with `Unable to find ...frontend\dist`:
-
-```bat
-.venv\Scripts\python.exe -m desktop                :: run it directly
-.venv\Scripts\pyinstaller.exe desktop\desktop.spec :: package into dist\签到面板\
-```
-
-**Clicking X does not quit.** It asks once (with a "don't ask again" box), then hides to the
-notification area. Left-click the tray icon to bring the window back; right-click and pick
-**退出** (Quit) to really stop it. That is the whole point of the desktop build: the daily
-check-in keeps running without a window occupying your screen.
-
-The `dist\签到面板\` folder can be moved anywhere. `data\`, `.browser_profiles\` and
-`.local\cloakbrowser\` are all created next to the executable, so the accounts travel with the
-folder. It binds `127.0.0.1` by default.
-
-**Three things happen on a first run. None of them is a bug:**
-
-- Windows raises SmartScreen ("Windows protected your PC") — the executable has no code
-  signing certificate. Click **More info** → **Run anyway**.
-- Some antivirus products flag PyInstaller output. It needs an exclusion.
-- The first **browser login** downloads roughly 500MB of browser engine, and the UI looks
-  frozen while it does. Accounts that check in over plain HTTP do not wait for it.
-
-### Container
-
-```bash
-docker compose build
-docker compose up -d
-docker compose logs -f
-```
-
-Then open <http://127.0.0.1:8000>. Set the timezone before the first check-in, in
-`docker-compose.yml`:
+Create `docker-compose.yml` on your NAS or Linux server:
 
 ```yaml
-environment:
-  TZ: Asia/Shanghai
+services:
+  checkin-panel:
+    # Docker Hub image (GHCR alternative: ghcr.io/gaoshou101/checkin-panel:latest)
+    image: gaoshou101/checkin-panel:latest
+    container_name: checkin-panel
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Timezone (ensures claim windows align with local site schedules)
+      TZ: Asia/Shanghai
+      # Outbound proxy (for Cloudflare & WAF bypass; supports http://, socks5://, socks5h://)
+      CHECKIN_PROXY_URL: http://host.docker.internal:7890
+      # Scheduler: 1 to enable daily automatic check-ins, 0 for manual only
+      PANEL_SCHEDULER: "1"
+      # Clean mode: 0 disables external promo cards and outbound polling
+      PANEL_PROMO: "0"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # 1. Accounts database persistence (panel.db)
+      - ./data:/app/data
+      # 2. Browser session profile persistence
+      - ./profiles:/app/.browser_profiles
 ```
 
-This is not decoration. A site opens its daily bonus at a particular hour (`checkin_after` on
-the account) and the panel measures a day in **local** time, so a container left on UTC retries
-at the wrong hour, over and over.
-
-`docker-compose.yml` publishes `127.0.0.1:8000:8000`, which is this machine only. Before you
-widen that, read the section above and `docs/deploying.md`.
-
-### Console
-
-```bat
-start.bat
+Start the container:
+```bash
+docker compose up -d && docker compose logs -f
 ```
+Open `http://<YOUR_SERVER_IP>:8000` in your browser!
 
-or `.venv\Scripts\python.exe run.py`. Close the window and the scheduler stops, with no
-warning of any kind.
-
-Note that `run.py` binds `0.0.0.0` by default (reachable on your LAN) and `start.bat` narrows it
-to `127.0.0.1` for you. If you run `run.py` directly, set `PANEL_HOST` yourself.
-
-## Installing from source
-
-Python 3.11+ (measured on 3.14), plus Node 20+ if you intend to change the frontend.
-
-```bat
-python -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements\browser.txt
-```
-
-Dependencies have been streamlined into two concise files:
-
-| File | What it adds |
-|---|---|
-| `requirements.txt` | Core production dependencies (FastAPI, HTTP client, SOCKS5 support, headless browser) |
-| `requirements-dev.txt` | Development & unit testing (pytest, respx) |
-
-The UI has to be built once — `frontend/dist/` is a build artifact and is not in the repository
-(the container path handles this itself; the image builds it):
+### Option 2: Docker CLI
 
 ```bash
-cd frontend
-npm ci --legacy-peer-deps
-npm run build
+docker run -d \
+  --name checkin-panel \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -e TZ=Asia/Shanghai \
+  -e PANEL_SCHEDULER=1 \
+  -e PANEL_PROMO=0 \
+  -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/profiles:/app/.browser_profiles \
+  gaoshou101/checkin-panel:latest
 ```
 
-`--legacy-peer-deps` is required: `@heroui/theme` declares a peer dependency on
-`tailwindcss>=4` while this project uses `3.4.x`. It is a known, unresolved frontend dependency
-conflict and it does not affect the build output.
+### Environment Variables
 
-Without `frontend/dist/` the panel serves the API and no UI.
+| Variable | Default | Description |
+|---|---|---|
+| `TZ` | `Asia/Shanghai` | Timezone for accurate daily window calculation |
+| `CHECKIN_PROXY_URL` | `http://127.0.0.1:7897` | Outbound proxy (`http://`, `socks5://`, `socks5h://`) |
+| `PANEL_SCHEDULER` | `1` | Daily scheduler: `1` runs automatic loop every 30m, `0` disables |
+| `PANEL_PROMO` | `0` | Promo cards: `0` for clean mode, `1` to poll remote promos |
+| `PANEL_HOST` | `0.0.0.0` | Listen address inside container |
+| `PANEL_PORT` | `8000` | Listen port inside container |
 
-Then add your first account: **添加账号** (Add account) at the top right, type the site's
-address and press **检测** (Probe) — the check-in mechanism and which login methods the site
-accepts both come from the probe result, so you do not have to work them out.
+### Option 3: Local Python Run (Development)
 
-![The add-account dialog: name, base URL, check-in mechanism, login method, username and password](docs/images/add-account.png)
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python run.py
+
+# To run unit tests:
+pip install -r requirements-dev.txt
+pytest panel/tests
+```
+
+---
+
+## Automated Docker Hub Publishing via GitHub Actions
+
+This repository includes a GitHub Actions workflow (`.github/workflows/docker-publish.yml`):
+- **Default Publishing**: Automatically builds and pushes to GitHub Container Registry (`ghcr.io`) upon pushes to `main` or `v*` tags;
+- **Docker Hub Sync**: Add these secrets in your repository `Settings` -> `Secrets and variables` -> `Actions`:
+  - `DOCKERHUB_USERNAME`: Your Docker Hub username (e.g. `gaoshou101`)
+  - `DOCKERHUB_TOKEN`: Your Docker Hub Access Token
+  Once configured, images will automatically push to `gaoshou101/checkin-panel:latest`!
+
+---
 
 ## Doing a browser login on a server
 
