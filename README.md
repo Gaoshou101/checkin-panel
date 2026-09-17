@@ -14,7 +14,6 @@
 [![CI/CD Build](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Gaoshou101/checkin-panel/actions/workflows/docker-publish.yml)
 [![许可 MIT](https://img.shields.io/badge/许可-MIT-16a34a?style=flat-square)](LICENSE)
 [![Python 3.14](https://img.shields.io/badge/Python-3.14+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![原作者 @BinbingLi](https://img.shields.io/badge/@BinbingLi-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/BinbingLi)
 [![agentrouter.org 邀请注册](https://img.shields.io/badge/agentrouter.org-邀请注册-f59e0b?style=flat-square)](https://agentrouter.org/register?aff=fQnR)
 [![anyrouter.top 邀请注册](https://img.shields.io/badge/anyrouter.top-邀请注册-0284c7?style=flat-square)](https://anyrouter.top/register?aff=4w7X)
 
