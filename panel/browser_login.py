@@ -788,6 +788,13 @@ async def mint_turnstile(
 	visits `/login` and renders it there.
 	"""
 	base_url = base_url.rstrip('/')
+
+	# Fast-path: try third-party solver API (CapSolver / YesCaptcha) if configured
+	from panel.turnstile_solver import solve_turnstile
+	solved_token = await solve_turnstile(base_url, sitekey)
+	if solved_token:
+		return solved_token
+
 	profile = profile_name(account_name)
 	# Ephemeral on purpose: there is nothing to remember, and a persistent profile
 	# accumulates Cloudflare challenge state that makes the widget refuse to render —
