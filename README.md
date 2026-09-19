@@ -101,6 +101,7 @@ docker run -d \
 | `TZ` | `Asia/Shanghai` | 容器时区，确保签到时间窗口按本地时间精准结算 |
 | `CHECKIN_PROXY_URL` | `http://127.0.0.1:7897` | 全局出站代理（支持 `http://`, `socks5://`, `socks5h://`） |
 | `CHECKIN_PROXY_OVERRIDES` | (空) | 按域名分流代理（JSON 格式），如 `'{"anyrouter.top": "http://192.168.10.30:7890", "direct.com": "DIRECT"}'` |
+| `CHECKIN_PROXY_POOL` | (空) | 备用代理池（JSON 数组或分号分隔），未命中分流且默认代理为空时自动轮询 |
 | `PANEL_SCHEDULER` | `1` | 定时签到开关：`1` 为每 30 分钟轮询窗口自动签到，`0` 为仅手动 |
 | `PANEL_PROMO` | `0` | 推荐卡片：`0` 为纯净无外联模式，`1` 为拉取推荐卡片 |
 | `PANEL_HOST` | `0.0.0.0` | 容器内监听地址 |

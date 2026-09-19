@@ -25,6 +25,34 @@ def _extract_host(url_or_host: Optional[str]) -> Optional[str]:
 	return val.split(':')[0]
 
 
+def get_proxy_pool() -> list[str]:
+	"""读取代理池列表。
+
+	支持：
+	- CHECKIN_PROXY_POOL: JSON 数组或分号/逗号/换行分隔的代理列表
+	- CHECKIN_PROXY_URL: 作为默认/保底代理加入池中
+	"""
+	raw = os.getenv('CHECKIN_PROXY_POOL', '').strip()
+	pool: list[str] = []
+	if raw:
+		if raw.startswith('[') and raw.endswith(']'):
+			try:
+				parsed = json.loads(raw)
+				if isinstance(parsed, list):
+					pool = [str(x).strip() for x in parsed if str(x).strip()]
+			except Exception as e:
+				logger.warning(f"Failed to parse CHECKIN_PROXY_POOL as JSON: {e}")
+		if not pool:
+			for item in raw.replace(chr(10), ";").replace(",", ";").split(";"):
+				p = item.strip()
+				if p and p not in pool:
+					pool.append(p)
+	default_url = os.getenv('CHECKIN_PROXY_URL', '').strip()
+	if default_url and default_url not in pool:
+		pool.append(default_url)
+	return pool
+
+
 def get_proxy_server(*, use_proxy: bool = True, url: Optional[str] = None) -> Optional[str]:
 	"""按平台配置读取代理。
 
@@ -32,6 +60,7 @@ def get_proxy_server(*, use_proxy: bool = True, url: Optional[str] = None) -> Op
 	- CHECKIN_PROXY_OVERRIDES: JSON 格式的域名映射，例如：
 	  {"anyrouter.top": "http://192.168.10.30:7890", "direct.com": "DIRECT"}
 	- CHECKIN_PROXY_URL: 全局默认出站代理
+	- CHECKIN_PROXY_POOL: 代理池（若未设置 CHECKIN_PROXY_URL，回退到池中首个代理）
 	"""
 	if not use_proxy:
 		return None
@@ -53,7 +82,11 @@ def get_proxy_server(*, use_proxy: bool = True, url: Optional[str] = None) -> Op
 			logger.warning(f"Failed to parse CHECKIN_PROXY_OVERRIDES: {e}")
 
 	server = os.getenv('CHECKIN_PROXY_URL', '').strip()
-	return server or None
+	if server:
+		return server
+
+	pool = get_proxy_pool()
+	return pool[0] if pool else None
 
 
 def get_playwright_proxy(*, use_proxy: bool = True, url: Optional[str] = None) -> dict[str, str] | None:

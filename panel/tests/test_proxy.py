@@ -43,3 +43,16 @@ def test_proxy_server_malformed_overrides(monkeypatch):
 	monkeypatch.setenv('CHECKIN_PROXY_OVERRIDES', 'invalid json')
 	# Does not crash and falls back
 	assert get_proxy_server(url='https://anyrouter.top') == 'socks5://default:1080'
+
+def test_proxy_pool(monkeypatch):
+	from panel.vendor.utils.proxy import get_proxy_pool
+	# Test semicolon separated list
+	monkeypatch.setenv('CHECKIN_PROXY_POOL', 'socks5://p1:1080;socks5://p2:1080')
+	monkeypatch.delenv('CHECKIN_PROXY_URL', raising=False)
+	assert get_proxy_pool() == ['socks5://p1:1080', 'socks5://p2:1080']
+	# Test fallback in get_proxy_server
+	assert get_proxy_server() == 'socks5://p1:1080'
+
+	# Test JSON format
+	monkeypatch.setenv('CHECKIN_PROXY_POOL', '["socks5://j1:1080", "socks5://j2:1080"]')
+	assert get_proxy_pool() == ['socks5://j1:1080', 'socks5://j2:1080']
