@@ -8,6 +8,7 @@
 > 3. **Chromium 孤儿锁自愈机制**：修复容器异常退出/强制重启后遗留 `SingletonLock`、`SingletonSocket` 导致 Playwright 报错 `ProcessSingleton: File exists` 崩溃的问题，启动前自动清理残留文件锁；
 > 4. **WAF 与 Cloudflare 挑战调优**：支持通过局域网 Clash / Mihomo HTTP 代理稳定通过 Alibaba Cloud ESA WAF 与 Cloudflare Managed Challenge；
 > 5. **剥离桌面遗留与纯净模式**：彻底移除 Windows GUI / 托盘代码与相关庞大依赖，默认开启 `PANEL_PROMO=0` 纯净模式，不向外部公共仓库轮询卡片，轻巧专注。
+> 6. **Turnstile 人机验证自动打码**：集成 CapSolver 与 YesCaptcha 远程打码服务，支持 `auto` 自动降级，毫秒级快速换取 Turnstile Token，无需启动重型无头浏览器，大幅降低低配 NAS/VPS 内存与 CPU 开销。
 
 [![Docker Hub](https://img.shields.io/badge/Docker_Hub-wit7zz%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/wit7zz/checkin-panel)
 [![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
@@ -59,6 +60,14 @@ services:
       # 支持 http://, socks5://, socks5h://
       # 示例指向局域网旁路由 Clash / 宿主机代理端口：
       CHECKIN_PROXY_URL: http://host.docker.internal:7890
+      # 按域名分流代理（JSON 格式，可选）：
+      # CHECKIN_PROXY_OVERRIDES: '{"anyrouter.top": "http://host.docker.internal:7890"}'
+      # 备用代理池（JSON 数组，可选）：
+      # CHECKIN_PROXY_POOL: '["socks5://host.docker.internal:1080"]'
+      # 人机验证自动打码（可选，免起本地无头浏览器，秒过 Cloudflare Turnstile）：
+      # CAPSOLVER_API_KEY: "CAI-xxx"
+      # YESCAPTCHA_CLIENT_KEY: "your_yescaptcha_key"
+      # TURNSTILE_SOLVER_PROVIDER: "auto"
       # 每日定时自动签到循环 (1 开启，0 仅在页面手动点击)
       PANEL_SCHEDULER: "1"
       # 纯净模式 (0 关闭第三方推荐卡片外联)
@@ -88,7 +97,10 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -e PANEL_SCHEDULER=1 \
   -e PANEL_PROMO=0 \
-  -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
+  -e CHECKIN_PROXY_URL="http://192.168.1.100:7890" \
+  # -e CAPSOLVER_API_KEY="CAI-xxx" \
+  # -e YESCAPTCHA_CLIENT_KEY="your_yescaptcha_key" \
+  # -e TURNSTILE_SOLVER_PROVIDER="auto" \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/profiles:/app/.browser_profiles \
   wit7zz/checkin-panel:latest
@@ -126,6 +138,28 @@ python run.py
 # 4. 如需运行单元测试
 pip install -r requirements-dev.txt
 pytest panel/tests
+```
+
+## Cloudflare Turnstile 验证码自动打码
+
+部分中转站点（如 `kktoken.cc`、`tabitoken.com` 等）开启了 Cloudflare Turnstile 验证码保护，纯 HTTP 请求若未携带有效 Turnstile Token 会被拦截并要求通过人机验证。
+
+本项目已深度集成第三方验证码代答服务，支持 **CapSolver** 与 **YesCaptcha**：
+- **免启动无头浏览器**：在需要刷新凭据或获取 Token 时直接通过远程 API 代答，6~12 秒内即可换回有效 Token；
+- **双引擎自动降级 (`auto`)**：若配置了 CapSolver，优先使用；若遇到错误或余额耗尽，可自动故障转移至 YesCaptcha；
+- **大幅降低资源占用**：无需启动开销巨大的无头浏览器进程（节省约 300MB~500MB 内存），极度适合 1G~2G 低配 VPS 与轻量 NAS。
+
+### 配置方式
+在 `docker-compose.yml` 的 `environment` 中添加对应 Key 即可（按需任选一个或同时配置）：
+```yaml
+      # CapSolver (https://www.capsolver.com)
+      CAPSOLVER_API_KEY: "CAI-xxxx"
+
+      # YesCaptcha (国内友好，支持支付宝，https://yescaptcha.com)
+      YESCAPTCHA_CLIENT_KEY: "your_yescaptcha_key"
+
+      # 服务商优先级：auto (默认，优先 CapSolver 并自动降级) / capsolver / yescaptcha
+      TURNSTILE_SOLVER_PROVIDER: "auto"
 ```
 
 ---

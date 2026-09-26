@@ -8,6 +8,7 @@
 > 3. **Chromium Singleton Lock Auto-recovery**: Solves `ProcessSingleton: File exists` crashes after abnormal container termination by automatically removing dangling `SingletonLock` / `SingletonSocket` files;
 > 4. **WAF & Cloudflare Challenge Optimization**: Proven stability when routing through local Clash / Mihomo proxies to pass Alibaba Cloud ESA WAF and Cloudflare Managed Challenges;
 > 5. **Clean Streamlined Codebase**: Stripped out Windows desktop GUI and bulky tray dependencies; defaults to `PANEL_PROMO=0` clean mode with zero external promo polling.
+> 6. **Turnstile Captcha Solver Integration**: Built-in CapSolver and YesCaptcha remote solver with `auto` fallback to bypass Cloudflare Turnstile verification without spawning heavyweight browser processes.
 
 [![Docker Hub](https://img.shields.io/badge/Docker_Hub-wit7zz%2Fcheckin--panel-blue?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/r/wit7zz/checkin-panel)
 [![GHCR](https://img.shields.io/badge/GHCR-gaoshou101%2Fcheckin--panel-2563eb?style=flat-square&logo=github&logoColor=white)](https://github.com/Gaoshou101/checkin-panel/pkgs/container/checkin-panel)
@@ -57,6 +58,14 @@ services:
       TZ: Asia/Shanghai
       # Outbound proxy (for Cloudflare & WAF bypass; supports http://, socks5://, socks5h://)
       CHECKIN_PROXY_URL: http://host.docker.internal:7890
+      # Per-domain proxy overrides (JSON, optional):
+      # CHECKIN_PROXY_OVERRIDES: '{"anyrouter.top": "http://host.docker.internal:7890"}'
+      # Fallback proxy pool (JSON array, optional):
+      # CHECKIN_PROXY_POOL: '["socks5://host.docker.internal:1080"]'
+      # Turnstile captcha solver (optional, bypasses Cloudflare Turnstile without headless browser):
+      # CAPSOLVER_API_KEY: "CAI-xxx"
+      # YESCAPTCHA_CLIENT_KEY: "your_yescaptcha_key"
+      # TURNSTILE_SOLVER_PROVIDER: "auto"
       # Scheduler: 1 to enable daily automatic check-ins, 0 for manual only
       PANEL_SCHEDULER: "1"
       # Clean mode: 0 disables external promo cards and outbound polling
@@ -86,7 +95,10 @@ docker run -d \
   -e TZ=Asia/Shanghai \
   -e PANEL_SCHEDULER=1 \
   -e PANEL_PROMO=0 \
-  -e CHECKIN_PROXY_URL="http://192.168.10.30:7890" \
+  -e CHECKIN_PROXY_URL="http://192.168.1.100:7890" \
+  # -e CAPSOLVER_API_KEY="CAI-xxx" \
+  # -e YESCAPTCHA_CLIENT_KEY="your_yescaptcha_key" \
+  # -e TURNSTILE_SOLVER_PROVIDER="auto" \
   -v $(pwd)/data:/app/data \
   -v $(pwd)/profiles:/app/.browser_profiles \
   wit7zz/checkin-panel:latest
@@ -98,7 +110,11 @@ docker run -d \
 |---|---|---|
 | `TZ` | `Asia/Shanghai` | Timezone for accurate daily window calculation |
 | `CHECKIN_PROXY_URL` | `http://127.0.0.1:7897` | Outbound proxy (`http://`, `socks5://`, `socks5h://`) |
-| `CHECKIN_PROXY_OVERRIDES` | (empty) | Per-domain proxy overrides (JSON), e.g. `'{"anyrouter.top": "http://192.168.10.30:7890", "direct.com": "DIRECT"}'` |
+| `CHECKIN_PROXY_OVERRIDES` | (empty) | Per-domain proxy overrides (JSON), e.g. `'{"anyrouter.top": "http://host.docker.internal:7890", "direct.com": "DIRECT"}'` |
+| `CHECKIN_PROXY_POOL` | (empty) | Fallback proxy pool (JSON array or semicolon-separated), used when override missed and default proxy is empty |
+| `CAPSOLVER_API_KEY` | (empty) | CapSolver API Key to solve Cloudflare Turnstile without launching headless browser |
+| `YESCAPTCHA_CLIENT_KEY` | (empty) | YesCaptcha Client Key to solve Cloudflare Turnstile, China/Alipay friendly |
+| `TURNSTILE_SOLVER_PROVIDER` | `auto` | Preferred captcha solver: `auto` (CapSolver first, fallback to YesCaptcha), `capsolver`, `yescaptcha` |
 | `PANEL_SCHEDULER` | `1` | Daily scheduler: `1` runs automatic loop every 30m, `0` disables |
 | `PANEL_PROMO` | `0` | Promo cards: `0` for clean mode, `1` to poll remote promos |
 | `PANEL_HOST` | `0.0.0.0` | Listen address inside container |
@@ -115,6 +131,28 @@ python run.py
 # To run unit tests:
 pip install -r requirements-dev.txt
 pytest panel/tests
+```
+
+## Cloudflare Turnstile Captcha Auto-Solving
+
+Some relay sites (e.g. `kktoken.cc`, `tabitoken.com`) require Cloudflare Turnstile verification. Without a valid Turnstile token, API requests are blocked by anti-bot challenges.
+
+This project integrates remote captcha solving via **CapSolver** and **YesCaptcha**:
+- **Headless Browser-Free**: Solves Turnstile via high-speed API in 6–12 seconds, bypassing the challenge without launching a local browser instance.
+- **Dual-Engine Automatic Fallback (`auto`)**: Tries CapSolver first; if an error or quota exhaustion occurs, seamlessly falls back to YesCaptcha.
+- **Ultra-low Resource Footprint**: Eliminates the 300MB–500MB RAM overhead of browser automation, making it ideal for low-spec 1GB–2GB VPS and home NAS appliances.
+
+### Configuration
+Add your API key(s) to the `environment:` section of `docker-compose.yml`:
+```yaml
+      # CapSolver (https://www.capsolver.com)
+      CAPSOLVER_API_KEY: "CAI-xxxx"
+
+      # YesCaptcha (China/Alipay friendly, https://yescaptcha.com)
+      YESCAPTCHA_CLIENT_KEY: "your_yescaptcha_key"
+
+      # Provider preference: auto (default, CapSolver with YesCaptcha fallback) / capsolver / yescaptcha
+      TURNSTILE_SOLVER_PROVIDER: "auto"
 ```
 
 ---

@@ -24,9 +24,20 @@ services:
       # 支持 http://, socks5://, socks5h://
       # 用于穿透 Cloudflare Managed Challenge 或阿里云 ESA WAF
       # 示例（指向局域网 Clash / 宿主机代理）：
-      # CHECKIN_PROXY_URL: http://192.168.10.30:7890
+      # CHECKIN_PROXY_URL: http://192.168.1.100:7890
       CHECKIN_PROXY_URL: http://host.docker.internal:7897
-      # CHECKIN_PROXY_OVERRIDES: '{"anyrouter.top": "http://192.168.10.30:7890"}'
+      # 按域名单独指定分流代理（JSON 字典）：
+      # CHECKIN_PROXY_OVERRIDES: '{"anyrouter.top": "http://host.docker.internal:7890"}'
+      # 备用代理池（JSON 数组，未命中分流且默认代理为空时轮询）：
+      # CHECKIN_PROXY_POOL: '["socks5://host.docker.internal:1080"]'
+
+      # 人机验证自动打码（按需启用，秒过 Cloudflare Turnstile，免起重型无头浏览器）：
+      # 1. CapSolver API Key (https://dashboard.capsolver.com)
+      # CAPSOLVER_API_KEY: ""
+      # 2. YesCaptcha Client Key (国内友好，支持支付宝充值，https://yescaptcha.com)
+      # YESCAPTCHA_CLIENT_KEY: ""
+      # 3. 验证码服务商优先级 (auto / capsolver / yescaptcha，默认 auto：优先 CapSolver 并自动降级)
+      # TURNSTILE_SOLVER_PROVIDER: "auto"
 
       # 调度器：1 为开启每日自动定时签到循环，0 为仅在前端手动签到
       PANEL_SCHEDULER: "1"
